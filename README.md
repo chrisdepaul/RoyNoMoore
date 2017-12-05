@@ -17,3 +17,11 @@ Visit the Options page for the Chrome Extension and add the names of people you 
 
 ![Options Page](https://github.com/sketchedin/black-mirror-blocker/blob/master/screenshots/optionspage.png)
 ![Sample Page](https://github.com/sketchedin/black-mirror-blocker/blob/master/screenshots/wikipage.png)
+
+## Next Steps
+
+* Obfuscate Images
+
+## Inspiration
+
+This Chrome Extension was inspired by the Black Mirror episode titled [White Christmas](https://en.wikipedia.org/wiki/White_Christmas_(Black_Mirror)). 
