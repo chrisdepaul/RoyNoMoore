@@ -1,15 +1,16 @@
 var elements = Array.from(document.body.getElementsByTagName('*'))
 var title = document.head.getElementsByTagName('title')[0];
 
-console.log("TESTEST")
-
 chrome.storage.sync.get({list: []}, function(result) {
     var blockedList = result.list ? result.list : [];
 
     // Update Page Title
-    var results = scan(title.text, blockedList)
-    results ? updateTitle(results) : null
+    if(title) {
+        var results = scan(title.text, blockedList)
+        results.length > 0 ? updateTitle(results) : null
+    }
 
+    // Update Elements
     elements.forEach((node) => {
         Array.from(node.childNodes).forEach(checkText(blockedList))
     })
@@ -77,8 +78,8 @@ function update(node, matchObjectArray) {
     })
 }
 
-function updateTitle(matchObject) {
-    var newTitle = matchObject[0].input.replace(matchObject[0], "Someone")
+function updateTitle(title) {
+    var newTitle = matchObject.input.replace(matchObject[0], "Someone")
     chrome.runtime.sendMessage({newTitle: newTitle}, function(response) {});
 }
 
