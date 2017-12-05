@@ -36,9 +36,9 @@ function createNodeWithText(node, text) {
 
 function updateDOM(originalNode, newNodeArray) {
     newNodeArray.forEach(newNode => {
-        originalNode.parentElement.insertBefore(newNode, node)
+        originalNode.parentElement.insertBefore(newNode, originalNode)
     })
-    node.parentElement.removeChild(node)
+    originalNode.parentElement.removeChild(originalNode)
 }
 
 function update(node, matchObject) {
@@ -50,7 +50,8 @@ function update(node, matchObject) {
 }
 
 function scan(node, blockedList) {
-    let text = node.nodeValue
-    let scannedText = match(text, blockedList)
-    (scannedText) ? update(node, scannedText)
+    let text = node.nodeValue;
+    let scannedText = match(text, blockedList);
+    scannedText ? update(node, scannedText) : null
 }
+

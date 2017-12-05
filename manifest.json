@@ -1,5 +1,5 @@
 {
-    "manifest_version": 1,
+    "manifest_version": 2,
     "name": "Black Mirror Blocker",
     "version": "1.0",
     "description": "A Black Mirror-inspired extension that lets you block the names and faces of people you no longer want to see.",
@@ -15,5 +15,9 @@
             "run_at": "document_end",
             "all_frames": true
         }
-    ]
+    ],
+    "permissions": [
+      "storage"
+    ],
+    "options_page": "options.html"
 }
