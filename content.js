@@ -1,21 +1,32 @@
-var elements = Array.from(document.body.getElementsByTagName('*'))
 var title = document.head.getElementsByTagName('title')[0];
+
+function treeFilter (node){
+    if (node.tagName == "script") 
+        return NodeFilter.FILTER_SKIP
+    else
+        return NodeFilter.FILTER_ACCEPT
+}
+
+var treeWalker = document.createTreeWalker(
+  document.body,
+  NodeFilter.SHOW_ELEMENT,
+  treeFilter,
+  false
+);
 
 chrome.storage.sync.get({list: []}, function(result) {
     var blockedList = result.list ? result.list : [];
 
     // Update Page Title
-    
     if(title) {
         var results = scan(title.text, blockedList)
         results.length > 0 ? updateTitle(results) : null
     }
-    
-
-    // Update Elements
-    elements.forEach((node) => {
-        Array.from(node.childNodes).forEach(checkText(blockedList))
-    })
+        
+    while(treeWalker.nextNode()){
+        treeWalker.nextNode()
+        Array.from(treeWalker.currentNode.childNodes).forEach(checkText(blockedList))
+    } 
 
 });
 
@@ -23,7 +34,7 @@ function checkText(blockedList) {
     return function(blockedList, childNode) {
         if(childNode.nodeType == 3 && childNode.nodeValue) {
             var results = scan(childNode.nodeValue, blockedList)
-            results ? update(childNode, results) : null
+            results.length > 0 ? update(childNode, results) : null
         }
     }.bind(this, blockedList)
 }
