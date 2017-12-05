@@ -1,20 +1,41 @@
-var elements = Array.from(document.getElementsByTagName('*'))
+var elements = Array.from(document.body.getElementsByTagName('*'))
+var title = document.head.getElementsByTagName('title')[0];
 
-//var blockedList = ["Harvey Weinstein", "Mr. Weinstein", "Weinstein"]
+console.log("TESTEST")
 
 chrome.storage.sync.get({list: []}, function(result) {
     var blockedList = result.list ? result.list : [];
+
+    // Update Page Title
+    var results = scan(title.text, blockedList)
+    results ? updateTitle(results) : null
+
     elements.forEach((node) => {
         Array.from(node.childNodes).forEach(checkText(blockedList))
     })
+
 });
 
 function checkText(blockedList) {
     return function(blockedList, childNode) {
         if(childNode.nodeType == 3 && childNode.nodeValue) {
-            scan(childNode, blockedList)
+            var results = scan(childNode.nodeValue, blockedList)
+            results ? update(childNode, results) : null
         }
     }.bind(this, blockedList)
+}
+
+function scan(text, blockedList) {
+    //let scannedText = match(text, blockedList);
+    var str = text
+    var scannedText = []
+    let result = match(str, blockedList)
+    while(result) {
+        scannedText.push(result)
+        str = str.substr(result.index + result[0].length)
+        result = match(str, blockedList)
+    }
+    return scannedText
 }
 
 function match(text, blockedList) {
@@ -37,23 +58,28 @@ function createNodeWithText(node, text) {
 }
 
 function updateDOM(originalNode, newNodeArray) {
-    newNodeArray.forEach(newNode => {
-        originalNode.parentElement.insertBefore(newNode, originalNode)
+    var newElements = newNodeArray.map(newNode => {
+        return originalNode.parentNode.insertBefore(newNode, originalNode)
     })
-    originalNode.parentElement.removeChild(originalNode)
+    originalNode.parentNode.removeChild(originalNode)
+    return newElements[2]
 }
 
-function update(node, matchObject) {
-    var firstHalfNode = createNodeWithText(node, matchObject.input.substr(0, matchObject.index))
-    var newNode = createSpan(node, matchObject)
-    var secondHalfNode = createNodeWithText(node, matchObject.input.substr(matchObject.index + matchObject[0].length, matchObject.input.length - 1))
+function update(node, matchObjectArray) {
+    matchObjectArray.forEach(matchObject => {
+        //console.log(node)
+        var firstHalfNode = createNodeWithText(node, matchObject.input.substr(0, matchObject.index))
+        var newNode = createSpan(node, matchObject)
+        var secondHalfNode = createNodeWithText(node, matchObject.input.substr(matchObject.index + matchObject[0].length, matchObject.input.length - 1))
 
-    updateDOM(node, [firstHalfNode, newNode, secondHalfNode])
+        node = updateDOM(node, [firstHalfNode, newNode, secondHalfNode])
+
+    })
 }
 
-function scan(node, blockedList) {
-    let text = node.nodeValue;
-    let scannedText = match(text, blockedList);
-    scannedText ? update(node, scannedText) : null
+function updateTitle(matchObject) {
+    var newTitle = matchObject[0].input.replace(matchObject[0], "Someone")
+    chrome.runtime.sendMessage({newTitle: newTitle}, function(response) {});
 }
+
 

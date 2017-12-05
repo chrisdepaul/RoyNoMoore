@@ -10,18 +10,22 @@
                 "https://*/*"
             ],
             "js": [
-                "content.js",
-                "options.js",
-                "thirdParty/jquery-3.2.1.min.js",
-                "thirdParty/bootstrap.bundle.min.js"
+                "content.js"
             ],
             "run_at": "document_end",
             "all_frames": true
         }
     ],
-    "background":{"scripts": ["thirdParty/jquery-3.2.1.min.js", "thirdParty/bootstrap.bundle.min.js"]},
+    "background": {
+        "scripts": [
+            "background.js"
+        ]
+    },
     "permissions": [
-      "storage"
+      "storage",
+      "tabs",
+      "http://*/",
+      "https://*/"
     ],
     "options_page": "options.html"
 }
