@@ -22,7 +22,6 @@ function match(text, blockedList) {
     return text.match(regEx);
 }
 
-
 function createSpan(node, obj) {
     var newNode = document.createElement('span')
     newNode.style.color = 'transparent'

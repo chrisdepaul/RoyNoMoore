@@ -1,3 +1,16 @@
+@import url('@import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,400i,700');');
+
+body {
+	font-family: 'Source Sans Pro', sans-serif;
+
+}
+
+.jumbotron {
+	background: #ECE9E6;  /* fallback for old browsers */
+	background: -webkit-linear-gradient(to left, #FFFFFF, #ECE9E6);  /* Chrome 10-25, Safari 5.1-6 */
+	background: linear-gradient(to left, #FFFFFF, #ECE9E6); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+}
+
 .vertical-center {
 	min-height: 100%;  /* Fallback for browsers do NOT support vh unit */
 	min-height: 100vh; /* These two lines are counted as one :-)       */
@@ -6,10 +19,23 @@
 	align-items: center;
 }
 
+button {
+	text-transform: uppercase;
+}
+
+h1{
+	font-size: 1.7em;
+	letter-spacing: .7em;
+	text-transform: uppercase;
+	font-weight: 700;
+}
+
 h2{ 
 	font-size: 1em;
+	text-transform: uppercase;
+	font-weight: 600;
 }
 
 #text{
-	margin-bottom: 10px;
+	margin: 20px 0;
 }
