@@ -1,8 +1,8 @@
 {
-    "manifest_version": 2,
-    "name": "Replace strings",
+    "manifest_version": 1,
+    "name": "Black Mirror Blocker",
     "version": "1.0",
-    "description": "It replaces the occurences of 'refugee', 'refugees' to 'human', 'humans'",
+    "description": "A Black Mirror-inspired extension that lets you block the names and faces of people you no longer want to see.",
     "content_scripts": [
         {
             "matches": [
