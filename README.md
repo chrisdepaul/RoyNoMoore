@@ -1,1 +1,0 @@
-### A chrome extension that pixelates the names and faces of people you no longer want to see on the Internet.
