@@ -14,3 +14,6 @@ A Black Mirror-inspired browser extension to let you obfuscate the names and fac
 Visit the Options page for the Chrome Extension and add the names of people you no longer wish to see on the Internet.
 
 ## Screenshots
+
+![Options Page](https://github.com/sketchedin/black-mirror-blocker/blob/master/screenshots/optionspage.png)
+![Sample Page](https://github.com/sketchedin/black-mirror-blocker/blob/master/screenshots/wikipage.png)
