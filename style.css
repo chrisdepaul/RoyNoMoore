@@ -1,0 +1,15 @@
+.vertical-center {
+	min-height: 100%;  /* Fallback for browsers do NOT support vh unit */
+	min-height: 100vh; /* These two lines are counted as one :-)       */
+	text-align: center;
+	display: flex;
+	align-items: center;
+}
+
+h2{ 
+	font-size: 1em;
+}
+
+#text{
+	margin-bottom: 10px;
+}

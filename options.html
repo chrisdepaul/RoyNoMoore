@@ -1,12 +1,24 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 	<head>
-	  <meta charset="utf-8" />
+		<meta charset="utf-8">
+		<script src="thirdParty/jquery-3.2.1.min.js"></script>
+		<script src="thirdParty/bootstrap.bundle.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="thirdParty/bootstrap.min.css">
+		<link rel="stylesheet" type="text/css" href="style.css">
 	</head>
 	<body>
-	  <div id="data"></div>
-	  <input type="text" id="text"></input>
-	  <button id="set">Set</button>
-	  <script src="popup.js"></script>
+		<div class="jumbotron vertical-center">
+		  	<div class="container">
+		  		<h1>Who do you want to block?</h1>
+				<input type="text" id="text"></input>
+				<button id="set">Set</button>
+				<button id="reset">Reset</button>
+				<h2>Your block list:</h2>
+				<div id="data"></div>
+		  	</div>
+		</div>
+		
+		<script src='options.js'></script>
 	</body>
 </html>

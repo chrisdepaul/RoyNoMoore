@@ -1,10 +1,13 @@
 var elements = Array.from(document.getElementsByTagName('*'))
 
-var blockedList = ["Harvey Weinstein", "Mr. Weinstein", "Weinstein"]
+//var blockedList = ["Harvey Weinstein", "Mr. Weinstein", "Weinstein"]
 
-elements.forEach((node) => {
-    Array.from(node.childNodes).forEach(checkText(blockedList))
-})
+chrome.storage.sync.get({list: []}, function(result) {
+    var blockedList = result.list ? result.list : [];
+    elements.forEach((node) => {
+        Array.from(node.childNodes).forEach(checkText(blockedList))
+    })
+});
 
 function checkText(blockedList) {
     return function(blockedList, childNode) {
