@@ -5,10 +5,12 @@ chrome.storage.sync.get({list: []}, function(result) {
     var blockedList = result.list ? result.list : [];
 
     // Update Page Title
+    
     if(title) {
         var results = scan(title.text, blockedList)
         results.length > 0 ? updateTitle(results) : null
     }
+    
 
     // Update Elements
     elements.forEach((node) => {
@@ -78,9 +80,11 @@ function update(node, matchObjectArray) {
     })
 }
 
-function updateTitle(title) {
-    var newTitle = matchObject.input.replace(matchObject[0], "Someone")
-    chrome.runtime.sendMessage({newTitle: newTitle}, function(response) {});
+function updateTitle(matchObjectArray) {
+    matchObjectArray.forEach(matchObject => {
+        var newTitle = matchObject.input.replace(matchObject[0], "Someone")
+        chrome.runtime.sendMessage({newTitle: newTitle}, function(response) {});
+    })
 }
 
 
