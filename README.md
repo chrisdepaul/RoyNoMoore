@@ -1,4 +1,4 @@
-# black-mirror-blocker
+# RoyNoMoore
 A Black Mirror-inspired browser extension to let you obfuscate the names and faces of people you no longer want to see on the Internet.
 
 ## Run Locally
