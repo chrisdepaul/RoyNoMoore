@@ -74,7 +74,7 @@ var scanner = (function() {
  *  updateTitle - Send message to background.js to change title
  *  @param - array of match objects
  */
-function updateTitle(matchObjectArray) {
+function blockTitle(matchObjectArray) {
     let originalTitle = matchObjectArray[0].input
     let matchedWordsRegExp = new RegExp(matchObjectArray.map(match => match[0]).join("|"), 'i')
     let newTitle = originalTitle.replace(matchedWordsRegExp, GENERIC_IDENTIFIER)
@@ -82,34 +82,55 @@ function updateTitle(matchObjectArray) {
     chrome.runtime.sendMessage({newTitle: newTitle}, function(response) {});
 }
 
+/*  
+ *  block - Block the matching word
+ *  @param - node, matching word
+ *  @return - last index
+ */
+function blockText(node, matchObject, i) {
+    //Start of String, before Blocked Word
+    var preTextNode = document.createTextNode(matchObject.input.substr(i, matchObject.index - i))
+    node.parentNode.insertBefore(preTextNode, node);
+
+    // Wrap Blocked Word in Span
+    var word = node.parentNode.insertBefore(document.createElement('span'), node);
+    word.appendChild(document.createTextNode(matchObject[0]));
+
+    // Set Style
+    word.style.color = 'transparent'
+    word.style.textShadow = "0 0 0.6em black"
+
+    // Update i to end of current string
+    i = matchObject.index + matchObject[0].length
+
+    // Update current node value to string after blocked word
+    node.nodeValue = matchObject.input.substr(i, matchObject.input.length - 1)
+
+    return i
+}
+
+/*
+ *  Run Extension
+ */
 var treeWalker = createTreeWalker(document.body, NodeFilter.SHOW_TEXT, treeWalkerFilter)
 var documentTitleNode = loadDocumentTitleNode()
 
-loadBlockList(BLOCKLIST_TYPE)
-    .then((blockedList) => {
+loadBlockList(BLOCKLIST_TYPE).then((blockedList) => {
+    // Initialize scanner
+    scanner.setBlockedList(blockedList)
 
-        // Initialize scanner
-        scanner.setBlockedList(blockedList)
+    // Scan & Update Title
+    let scannedTitle = scanner.scan(documentTitleNode.text)
+    if(scannedTitle.length > 0) blockTitle(scannedTitle)
 
-        // Scan & Update Title
-        let scannedTitle = scanner.scan(documentTitleNode.text)
-        if(scannedTitle.length > 0) updateTitle(scannedTitle)
-
-        // Scan & Update Tree
-        // THIS CODE COULD BE MADE MORE EFFICIENT
-        while(node = treeWalker.nextNode()){
-            let scannedNode = scanner.scan(node.nodeValue)
-            if(scannedNode.length > 0) {
-                let i = 0
-                scannedNode.forEach(matchObject => {
-                    node.parentNode.insertBefore(document.createTextNode(matchObject.input.substr(i, matchObject.index - i)), node);
-                    var word = node.parentNode.insertBefore(document.createElement('span'), node);
-                    word.appendChild(document.createTextNode(matchObject[0]));
-                    word.style.color = 'transparent'
-                    word.style.textShadow = "0 0 0.6em black"
-                    i = matchObject.index + matchObject[0].length
-                    node.nodeValue = matchObject.input.substr(matchObject.index + matchObject[0].length, matchObject.input.length - 1)
-                })
-            }
-        } 
-    })
+    // Scan & Update Tree
+    while(node = treeWalker.nextNode()){
+        let scannedNode = scanner.scan(node.nodeValue)
+        if(scannedNode.length > 0) {
+            let i = 0
+            scannedNode.forEach(matchObject => {
+                i = blockText(node, matchObject, i)
+            }) 
+        }
+    } 
+})
