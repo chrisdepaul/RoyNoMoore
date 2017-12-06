@@ -110,27 +110,44 @@ function blockText(node, matchObject, i) {
 }
 
 /*
- *  Run Extension
+ *  Launch Blocker
  */
-var treeWalker = createTreeWalker(document.body, NodeFilter.SHOW_TEXT, treeWalkerFilter)
-var documentTitleNode = loadDocumentTitleNode()
-
-loadBlockList(BLOCKLIST_TYPE).then((blockedList) => {
-    // Initialize scanner
-    scanner.setBlockedList(blockedList)
-
+function launchBlocker(treeWalker, documentTitleNode, scanner) {
     // Scan & Update Title
-    let scannedTitle = scanner.scan(documentTitleNode.text)
-    if(scannedTitle.length > 0) blockTitle(scannedTitle)
+    if(documentTitleNode) {
+        let scannedTitle = scanner.scan(documentTitleNode.text)
+        if(scannedTitle.length > 0) blockTitle(scannedTitle)
+    } else {
+        console.log("Could not parse document.title...")
+    }
 
     // Scan & Update Tree
-    while(node = treeWalker.nextNode()){
-        let scannedNode = scanner.scan(node.nodeValue)
-        if(scannedNode.length > 0) {
-            let i = 0
-            scannedNode.forEach(matchObject => {
-                i = blockText(node, matchObject, i)
-            }) 
-        }
-    } 
+    if(treeWalker) {
+        while(node = treeWalker.nextNode()){
+            let scannedNode = scanner.scan(node.nodeValue)
+            if(scannedNode.length > 0) {
+                let i = 0
+                scannedNode.forEach(matchObject => {
+                    i = blockText(node, matchObject, i)
+                }) 
+            }
+        } 
+    } else {
+        console.log("Could not parse DOM...")
+    }
+}
+
+/*
+ *  Listen for Messages from background.js
+ */
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if(request.message == "onDOMContentLoaded") {
+        var treeWalker = createTreeWalker(document.body, NodeFilter.SHOW_TEXT, treeWalkerFilter)
+        var documentTitleNode = loadDocumentTitleNode()
+        // Load Block List
+        loadBlockList(BLOCKLIST_TYPE).then((blockedList) => { 
+            scanner.setBlockedList(blockedList)
+            launchBlocker(treeWalker, documentTitleNode, scanner)
+        })
+    }
 })

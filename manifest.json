@@ -24,6 +24,7 @@
     "permissions": [
       "storage",
       "tabs",
+      "webNavigation",
       "http://*/",
       "https://*/"
     ],
