@@ -1,101 +1,115 @@
-var title = document.head.getElementsByTagName('title')[0];
+const GENERIC_IDENTIFIER = "Someone"
+const BLOCKLIST_TYPE = "SYNC"
 
-function treeFilter (node){
-    if (node.tagName == "script") 
-        return NodeFilter.FILTER_SKIP
-    else
-        return NodeFilter.FILTER_ACCEPT
-}
-
-var treeWalker = document.createTreeWalker(
-  document.body,
-  NodeFilter.SHOW_ELEMENT,
-  treeFilter,
-  false
-);
-
-chrome.storage.sync.get({list: []}, function(result) {
-    var blockedList = result.list ? result.list : [];
-
-    // Update Page Title
-    if(title) {
-        var results = scan(title.text, blockedList)
-        results.length > 0 ? updateTitle(results) : null
-    }
-        
-    while(treeWalker.nextNode()){
-        treeWalker.nextNode()
-        Array.from(treeWalker.currentNode.childNodes).forEach(checkText(blockedList))
-    } 
-
-});
-
-function checkText(blockedList) {
-    return function(blockedList, childNode) {
-        if(childNode.nodeType == 3 && childNode.nodeValue) {
-            var results = scan(childNode.nodeValue, blockedList)
-            results.length > 0 ? update(childNode, results) : null
+/*  
+ *  loadBlockList
+ *  @param type: 'SYNC' or 'TEST'
+ */
+function loadBlockList(type) {
+    return new Promise((resolve, reject) => {
+        if(type === 'SYNC') {
+            chrome.storage.sync.get({list: []}, function(result) {
+                var blockedList = result.list ? result.list : [];
+                resolve(blockedList)
+            })
+        } else {
+            resolve(["Harvey Weinstein", "Pamela Anderson"])
         }
-    }.bind(this, blockedList)
+    })
 }
 
-function scan(text, blockedList) {
-    //let scannedText = match(text, blockedList);
-    var str = text
-    var scannedText = []
-    let result = match(str, blockedList)
-    while(result) {
-        scannedText.push(result)
-        str = str.substr(result.index + result[0].length)
-        result = match(str, blockedList)
+/*  
+ *  createTreeWalker
+ *  @param root node, NodeFilter Type, Filter Function
+ */
+function createTreeWalker(rootNode, type, filter) {
+    return document.createTreeWalker(rootNode, type, {acceptNode: filter} );
+}
+
+/*  
+ *  treeWalkerFilter
+ *  @param node
+ */
+function treeWalkerFilter(node) {
+    // Logic to determine whether to accept, reject or skip node
+    // In this case, only accept nodes that have content
+    // other than whitespace
+    if ( node.tagName != "script" && ! /^\s*$/.test(node.data) ) {
+        return NodeFilter.FILTER_ACCEPT;
     }
-    return scannedText
 }
 
-function match(text, blockedList) {
-    var regEx = new RegExp(blockedList.join("|"), 'i')
-    return text.match(regEx);
+/*  
+ *  loadDocumentTitle
+ */
+function loadDocumentTitleNode() {
+    return document.head.getElementsByTagName('title')[0];
 }
 
-function createSpan(node, obj) {
-    var newNode = document.createElement('span')
-    newNode.style.color = 'transparent'
-    newNode.style.textShadow = "0 0 0.6em black"
-    newNode.textContent = obj[0]
-    return newNode
-}
+/*  
+ *  scanner - a closure for scanning text
+ *  return array of match objects
+ */
+var scanner = (function() {
+    regex = null
 
-function createNodeWithText(node, text) {
-    var newNode = node.cloneNode()
-    newNode.textContent = text
-    return newNode
-}
+    return {
+        setBlockedList: function(blockedList) {
+            regex = new RegExp(blockedList.join("|"), 'gi')
+        },
+        scan: function(text) {
+            var matches = [];
+            var match = regex.exec(text);
 
-function updateDOM(originalNode, newNodeArray) {
-    var newElements = newNodeArray.map(newNode => {
-        return originalNode.parentNode.insertBefore(newNode, originalNode)
-    })
-    originalNode.parentNode.removeChild(originalNode)
-    return newElements[2]
-}
+            while (match != null) {
+                matches.push(match);
+                match = regex.exec(text);
+            }
+            return matches
+        }
+    }
+})()
 
-function update(node, matchObjectArray) {
-    matchObjectArray.forEach(matchObject => {
-        //console.log(node)
-        var firstHalfNode = createNodeWithText(node, matchObject.input.substr(0, matchObject.index))
-        var newNode = createSpan(node, matchObject)
-        var secondHalfNode = createNodeWithText(node, matchObject.input.substr(matchObject.index + matchObject[0].length, matchObject.input.length - 1))
-
-        node = updateDOM(node, [firstHalfNode, newNode, secondHalfNode])
-
-    })
-}
-
+/*  
+ *  updateTitle - Send message to background.js to change title
+ *  @param - array of match objects
+ */
 function updateTitle(matchObjectArray) {
-    matchObjectArray.forEach(matchObject => {
-        var newTitle = matchObject.input.replace(matchObject[0], "Someone")
-        chrome.runtime.sendMessage({newTitle: newTitle}, function(response) {});
-    })
+    let originalTitle = matchObjectArray[0].input
+    let matchedWordsRegExp = new RegExp(matchObjectArray.map(match => match[0]).join("|"), 'i')
+    let newTitle = originalTitle.replace(matchedWordsRegExp, GENERIC_IDENTIFIER)
+
+    chrome.runtime.sendMessage({newTitle: newTitle}, function(response) {});
 }
 
+var treeWalker = createTreeWalker(document.body, NodeFilter.SHOW_TEXT, treeWalkerFilter)
+var documentTitleNode = loadDocumentTitleNode()
 
+loadBlockList(BLOCKLIST_TYPE)
+    .then((blockedList) => {
+
+        // Initialize scanner
+        scanner.setBlockedList(blockedList)
+
+        // Scan & Update Title
+        let scannedTitle = scanner.scan(documentTitleNode.text)
+        if(scannedTitle.length > 0) updateTitle(scannedTitle)
+
+        // Scan & Update Tree
+        // THIS CODE COULD BE MADE MORE EFFICIENT
+        while(node = treeWalker.nextNode()){
+            let scannedNode = scanner.scan(node.nodeValue)
+            if(scannedNode.length > 0) {
+                let i = 0
+                scannedNode.forEach(matchObject => {
+                    node.parentNode.insertBefore(document.createTextNode(matchObject.input.substr(i, matchObject.index - i)), node);
+                    var word = node.parentNode.insertBefore(document.createElement('span'), node);
+                    word.appendChild(document.createTextNode(matchObject[0]));
+                    word.style.color = 'transparent'
+                    word.style.textShadow = "0 0 0.6em black"
+                    i = matchObject.index + matchObject[0].length
+                    node.nodeValue = matchObject.input.substr(matchObject.index + matchObject[0].length, matchObject.input.length - 1)
+                })
+            }
+        } 
+    })
