@@ -1,5 +1,6 @@
 const GENERIC_IDENTIFIER = "Someone"
 const BLOCKLIST_TYPE = "SYNC"
+const MIN_IMG_WIDTH = 75
 
 /*  
  *  loadBlockList
@@ -51,21 +52,47 @@ function loadDocumentTitleNode() {
  *  return array of match objects
  */
 var scanner = (function() {
-    regex = null
+    regexText = null
+    regexImg = null
+
+    function imgify(blockedList) {
+        let chars = ["", "_", "%20", "-", "--", "__"]
+        var blockedListImgify = []
+
+        blockedList.forEach((word) => {
+            if(/ /g.test(word)) {
+                chars.forEach((char) => {
+                    blockedListImgify.push(word.replace(/ /g, char))
+                })
+            } else {
+                blockedListImgify.push(word)
+            }
+        })
+
+        return blockedListImgify
+    }
+
+    function scan(regex, text) {
+        var matches = [];
+        var match = regex.exec(text);
+
+        while (match != null) {
+            matches.push(match);
+            match = regex.exec(text);
+        }
+        return matches
+    }
 
     return {
         setBlockedList: function(blockedList) {
-            regex = new RegExp(blockedList.join("|"), 'gi')
+            regexText = new RegExp(blockedList.join("|"), 'gi')
+            regexImg = new RegExp(imgify(blockedList).join("|"), 'gi')
         },
-        scan: function(text) {
-            var matches = [];
-            var match = regex.exec(text);
-
-            while (match != null) {
-                matches.push(match);
-                match = regex.exec(text);
-            }
-            return matches
+        scanText: function(text) {
+            return scan(regexText, text)
+        },
+        scanImageText: function(text) {
+            return scan(regexImg, text)
         }
     }
 })()
@@ -81,6 +108,41 @@ function blockTitle(matchObjectArray) {
 
     chrome.runtime.sendMessage({newTitle: newTitle}, function(response) {});
 }
+
+/*  
+ *  getSuspectImages 
+ *  @param scanner
+ */
+ function getSuspectImages(scanner) {
+    let highProbability = []
+    let lowProbability = []
+
+    // Filter Size
+    Array.from(document.images).forEach((img) => {
+        var altValue = img.attributes.alt ? img.attributes.alt.nodeValue : ""
+        var srcValue = img.attributes.src ? img.attributes.src.nodeValue : ""
+        var altScan = scanner.scanImageText(altValue)
+        var srcScan = scanner.scanImageText(srcValue)
+
+        if(altScan.length > 0 || srcScan.length > 0) {
+            highProbability.push(img)
+        } else {
+            if(img.clientWidth >= MIN_IMG_WIDTH) {
+                lowProbability.push(img)
+            }
+        }
+    })
+
+    return { highProbability, lowProbability }  
+ }
+
+ /*  
+ *  blockImage - Block the image
+ *  @param - node
+ */
+ function blockImage(node) {
+    node.style.filter = "blur(13px)"
+ }
 
 /*  
  *  block - Block the matching word
@@ -115,7 +177,7 @@ function blockText(node, matchObject, i) {
 function launchBlocker(treeWalker, documentTitleNode, scanner) {
     // Scan & Update Title
     if(documentTitleNode) {
-        let scannedTitle = scanner.scan(documentTitleNode.text)
+        let scannedTitle = scanner.scanText(documentTitleNode.text)
         if(scannedTitle.length > 0) blockTitle(scannedTitle)
     } else {
         console.log("Could not parse document.title...")
@@ -124,7 +186,7 @@ function launchBlocker(treeWalker, documentTitleNode, scanner) {
     // Scan & Update Tree
     if(treeWalker) {
         while(node = treeWalker.nextNode()){
-            let scannedNode = scanner.scan(node.nodeValue)
+            let scannedNode = scanner.scanText(node.nodeValue)
             if(scannedNode.length > 0) {
                 let i = 0
                 scannedNode.forEach(matchObject => {
@@ -135,10 +197,18 @@ function launchBlocker(treeWalker, documentTitleNode, scanner) {
     } else {
         console.log("Could not parse DOM...")
     }
+
+    // Scan Images
+    var suspectImages = getSuspectImages(scanner)
+    console.log(suspectImages)
+    suspectImages.highProbability.forEach(node => {
+        blockImage(node)
+    })
 }
 
 /*
  *  Listen for Messages from background.js
+ *  Notification when onDOMContentLoaded
  */
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if(request.message == "onDOMContentLoaded") {
