@@ -10,7 +10,7 @@
                 "https://*/*"
             ],
             "js": [
-                "content.js"
+                "key.js", "feindStein.js", "content.js"
             ],
             "run_at": "document_end",
             "all_frames": true

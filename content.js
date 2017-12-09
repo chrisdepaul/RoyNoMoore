@@ -1,6 +1,8 @@
 const GENERIC_IDENTIFIER = "Someone"
 const BLOCKLIST_TYPE = "SYNC"
-const MIN_IMG_WIDTH = 75
+const MIN_IMG_DIM = 75
+const patternURI = "https://i.imgur.com/AquCYLf.png"
+
 
 /*  
  *  loadBlockList
@@ -52,8 +54,9 @@ function loadDocumentTitleNode() {
  *  return array of match objects
  */
 var scanner = (function() {
-    regexText = null
-    regexImg = null
+    var blockedList = null
+    var regexText = null
+    var regexImg = null
 
     function imgify(blockedList) {
         let chars = ["", "_", "%20", "-", "--", "__"]
@@ -84,7 +87,8 @@ var scanner = (function() {
     }
 
     return {
-        setBlockedList: function(blockedList) {
+        setBlockedList: function(list) {
+            blockedList = list
             regexText = new RegExp(blockedList.join("|"), 'gi')
             regexImg = new RegExp(imgify(blockedList).join("|"), 'gi')
         },
@@ -93,6 +97,16 @@ var scanner = (function() {
         },
         scanImageText: function(text) {
             return scan(regexImg, text)
+        },
+        getBlockedList: function() {
+            return blockedList
+        },
+        match: function(name) {
+            regexText.lastIndex = 0
+            console.log("---MATCH---")
+            //console.log(name, regexText.test(name))
+            console.log(regexText)
+            return regexText.test(name)
         }
     }
 })()
@@ -121,7 +135,7 @@ function blockTitle(matchObjectArray) {
     Array.from(document.images).forEach((img) => {
         var altValue = img.attributes.alt ? img.attributes.alt.nodeValue : ""
         var srcValue = img.attributes.src ? img.attributes.src.nodeValue : ""
-        var altScan = scanner.scanImageText(altValue)
+        var altScan = scanner.scanText(altValue)
         var srcScan = scanner.scanImageText(srcValue)
 
         if(altScan.length > 0 || srcScan.length > 0) {
@@ -134,6 +148,23 @@ function blockTitle(matchObjectArray) {
     })
 
     return { highProbability, lowProbability }  
+ }
+
+ function getCandidateImages() {
+    var images = []
+    Array.from(document.images).forEach((img) => {
+        if(img.clientWidth >= MIN_IMG_DIM && img.clientHeight >= MIN_IMG_DIM) {
+            images.push(img)
+        }
+    })
+
+    return images
+ }
+
+ function loadPatternImage(patternURI) {
+    var patternImage = new Image()
+    patternImage.src = patternURI
+    return patternImage
  }
 
  /*  
@@ -187,6 +218,7 @@ function launchBlocker(treeWalker, documentTitleNode, scanner) {
     if(treeWalker) {
         while(node = treeWalker.nextNode()){
             let scannedNode = scanner.scanText(node.nodeValue)
+            //console.log(scannedNode)
             if(scannedNode.length > 0) {
                 let i = 0
                 scannedNode.forEach(matchObject => {
@@ -199,11 +231,29 @@ function launchBlocker(treeWalker, documentTitleNode, scanner) {
     }
 
     // Scan Images
+    var candidateImages = getCandidateImages()
+    //var patternImage = loadPatternImage(patternURI)
+    candidateImages.forEach(img => {
+        try{
+            feindStein(img.src, scanner)
+                .then(results => {
+                    //setTimeout(()=>{
+                        results.faces ? replaceFaces(img, results.faces) : null
+                    //}, 2500)
+                    
+                })
+        } catch(err){
+            console.error(err)
+        }
+    })
+    /*
     var suspectImages = getSuspectImages(scanner)
     console.log(suspectImages)
     suspectImages.highProbability.forEach(node => {
         blockImage(node)
     })
+    */
+
 }
 
 /*
